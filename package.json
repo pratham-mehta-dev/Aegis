@@ -1,0 +1,25 @@
+{
+  "name": "aegis-idps",
+  "version": "1.0.0",
+  "description": "Aegis - AI-driven multi-layer IDPS (auth backend + IDS proxy + SOC admin API)",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node --watch server.js",
+    "start": "node server.js",
+    "ml": "python ml_service/app.py",
+    "create-admin": "node scripts/create-admin.js",
+    "test": "node --test tests/api.test.js"
+  },
+  "engines": {
+    "node": ">=22.5"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.9.16",
+    "otplib": "^12.0.1",
+    "uuid": "^9.0.1"
+  }
+}

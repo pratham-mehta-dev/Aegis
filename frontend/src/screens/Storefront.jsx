@@ -77,7 +77,15 @@ function AuthCard({ onLogin, onBlocked }) {
 
   const run = async (fn) => {
     setBusy(true); setMsg(null);
-    try { await fn(); } catch (err) { setMsg({ kind: "error", text: err.message }); }
+    try {
+      await fn();
+    } catch (err) {
+      setMsg({ kind: "error", text: err.message });
+      if (err?.data?.code === "session_expired") {
+        setPending(null);
+        setMode("login");
+      }
+    }
     setBusy(false);
   };
 
@@ -94,7 +102,11 @@ function AuthCard({ onLogin, onBlocked }) {
   });
 
   const submit2fa = () => run(async () => {
-    const res = await api.verify2fa({ pendingToken: pending.pendingToken, code: form.code });
+    const code = form.code.trim();
+    if (code.length !== 6) {
+      return setMsg({ kind: "error", text: "Enter the 6-digit code." });
+    }
+    const res = await api.verify2fa({ pendingToken: pending.pendingToken, code });
     onLogin(res);
   });
 

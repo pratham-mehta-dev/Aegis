@@ -314,11 +314,11 @@ router.post(
     try {
       payload = verifyPendingToken(String(pendingToken || ""));
     } catch {
-      return res.status(401).json({ error: "Sign-in session expired. Start again." });
+      return res.status(401).json({ error: "Sign-in session expired. Start again.", code: "session_expired" });
     }
     const user = db.prepare("SELECT * FROM users WHERE id = ?").get(payload.sub);
     if (!user || user.account_disabled) {
-      return res.status(401).json({ error: "Sign-in session expired. Start again." });
+      return res.status(401).json({ error: "Sign-in session expired. Start again.", code: "session_expired" });
     }
 
     let ok = false;
@@ -352,10 +352,10 @@ router.post(
     try {
       payload = verifyPendingToken(String(req.body?.pendingToken || ""));
     } catch {
-      return res.status(401).json({ error: "Sign-in session expired. Start again." });
+      return res.status(401).json({ error: "Sign-in session expired. Start again.", code: "session_expired" });
     }
     const user = db.prepare("SELECT * FROM users WHERE id = ?").get(payload.sub);
-    if (!user) return res.status(401).json({ error: "Sign-in session expired. Start again." });
+    if (!user) return res.status(401).json({ error: "Sign-in session expired. Start again.", code: "session_expired" });
     if (user.two_fa_method === "totp") {
       return res.status(400).json({ error: "This account uses an authenticator app." });
     }

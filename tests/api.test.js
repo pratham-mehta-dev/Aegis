@@ -8,6 +8,11 @@ process.env.PENDING_2FA_SECRET = "test-pending-secret-" + "y".repeat(32);
 process.env.FRONTEND_URL = "http://localhost:4000";
 process.env.APP_BASE_URL = "http://localhost:4000";
 process.env.NODE_ENV = "test";
+// Isolated DB per run so tests are repeatable and never touch the real data/ dir.
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+process.env.DB_PATH = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "aegis-test-")), "test.sqlite");
 
 const { test, before, after } = require("node:test");
 const assert = require("node:assert");

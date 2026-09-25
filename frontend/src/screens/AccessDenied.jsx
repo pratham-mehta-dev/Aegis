@@ -9,7 +9,7 @@ export default function AccessDenied({ type, alertId, onBack }) {
         <h2 className="mt8">Request Blocked by Aegis</h2>
         <p className="muted mt8">
           The Application Layer Engine classified this request as{" "}
-          <b style={{ color: "#f2994a" }}>{type || "malicious"}</b> and blocked it
+          <b style={{ color: "var(--orange)" }}>{type || "malicious"}</b> and blocked it
           before it reached the application.
         </p>
         <div className="detail-item mt16">

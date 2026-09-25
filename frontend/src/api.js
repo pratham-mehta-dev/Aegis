@@ -55,7 +55,7 @@ export const api = {
   me: () => request("/api/auth/me"),
 
   predict: (b) => request("/api/ids/predict", { method: "POST", body: b, auth: false }),
-  simulate: (b) => request("/api/ids/simulate", { method: "POST", body: b, auth: false }),
+  simulate: (b) => request("/api/ids/simulate", { method: "POST", body: b }),
 
   totpSetup: () => request("/api/auth/2fa/totp/setup", { method: "POST" }),
   totpConfirm: (b) => request("/api/auth/2fa/totp/confirm", { method: "POST", body: b }),

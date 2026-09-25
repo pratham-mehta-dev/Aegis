@@ -70,7 +70,7 @@ export default function App() {
         {tabs.map(([id, label]) => (
           <button key={id} className={`tab ${current === id ? "active" : ""}`} onClick={() => setView(id)}>{label}</button>
         ))}
-        <span className="small">{session.name} <span className="role-pill">{session.role}</span></span>
+        <span className="user-chip">{session.name}<span className="role-pill">{session.role}</span></span>
         <button className="btn btn-red btn-sm" onClick={onLogout}>Log Out</button>
       </div>
 

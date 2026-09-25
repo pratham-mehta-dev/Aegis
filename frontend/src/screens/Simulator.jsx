@@ -47,9 +47,9 @@ export default function Simulator({ onViewAlert }) {
 
   return (
     <div className="page" style={{ maxWidth: 900, margin: "0 auto" }}>
-      <div className="card" style={{ background: "var(--navy)", color: "#fff", border: "none" }}>
+      <div className="card hero-card">
         <b>Attack Simulator — Demo Mode</b>
-        <p className="small" style={{ color: "#c7d3e8" }}>
+        <p className="small muted">
           Preset attacks for demos. Application-layer presets run through the real ML engine;
           network-layer presets create clearly-labelled <i>simulated</i> alerts (no packet capture exists in this prototype).
         </p>

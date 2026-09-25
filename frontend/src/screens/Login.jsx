@@ -83,18 +83,25 @@ export default function Login({ onLogin, onBlocked }) {
   return (
     <div className="login-page">
       <div className="login-hero">
-        <div className="brand"><ShieldIcon size={28} /> Aegis</div>
+        <div className="brand"><ShieldIcon size={30} /> Aegis</div>
         <h1>AI-driven intrusion detection &amp; prevention</h1>
-        <p>Every sign-in is protected by email verification, mandatory 2FA and real-time payload inspection.</p>
-        <ul>
-          <li>Customers &rarr; Demo Storefront, reviews &amp; security settings</li>
-          <li>Admins &rarr; SOC Console, alerts, blocklist &amp; Attack Simulator</li>
-        </ul>
+        <p>Real-time payload inspection, mandatory two-factor authentication and a live Security Operations Center.</p>
+        <div className="terminal">
+          <div><span className="acc">aegis@soc</span>:~$ status --all</div>
+          <div><span className="ok">[ OK ]</span> Application layer engine · ML classifier online</div>
+          <div><span className="ok">[ OK ]</span> 2FA enforcement · email OTP / TOTP</div>
+          <div><span className="ok">[ OK ]</span> Brute-force lockout · rate limiting · IP blocklist</div>
+          <div><span className="warn">[WATCH]</span> Monitoring SQLi / XSS signatures <span className="cursor" /></div>
+        </div>
+        <div className="feature-grid">
+          <div className="feature"><b>Customers</b>Storefront, reviews &amp; security settings</div>
+          <div className="feature"><b>Analysts</b>SOC Console, alerts, blocklist &amp; simulator</div>
+        </div>
       </div>
     <div className="auth-card card">
       {mode === "login" && (
         <>
-          <h2>Sign in</h2>
+          <div className="auth-title"><div className="lock"><ShieldIcon size={18} /></div><h2>Secure sign in</h2></div>
           <p className="muted small">One login for customers and SOC analysts. You'll be taken to the right area after two-factor verification.</p>
           <Field label="Gmail address"><input className="input" type="email" value={form.email} onChange={set("email")} autoComplete="email" /></Field>
           <Field label="Password">
@@ -117,7 +124,7 @@ export default function Login({ onLogin, onBlocked }) {
 
       {mode === "register" && (
         <>
-          <h2>Create your account</h2>
+          <div className="auth-title"><div className="lock"><ShieldIcon size={18} /></div><h2>Create your account</h2></div>
           <p className="muted small">Use your Gmail address and a strong password.</p>
           <Field label="Full name"><input className="input" value={form.name} onChange={set("name")} autoComplete="name" /></Field>
           <Field label="Gmail address"><input className="input" type="email" value={form.email} onChange={set("email")} autoComplete="email" /></Field>
@@ -130,14 +137,14 @@ export default function Login({ onLogin, onBlocked }) {
 
       {mode === "twofa" && (
         <>
-          <h2>Verify your sign in</h2>
+          <div className="auth-title"><div className="lock"><ShieldIcon size={18} /></div><h2>Two-factor verification</h2></div>
           <p className="muted small">
             {pending?.method === "totp"
               ? "Enter the 6-digit code from your authenticator app."
               : "Enter the 6-digit code sent to your email."}
           </p>
           <Field label="Code">
-            <input className="input center mono" style={{ fontSize: 18, letterSpacing: 4 }} inputMode="numeric" maxLength={6} value={form.code} onChange={set("code")} />
+            <input className="input code-input" inputMode="numeric" maxLength={6} value={form.code} onChange={set("code")} />
           </Field>
           <button className="btn" style={{ width: "100%" }} disabled={busy} onClick={submit2fa}>{busy ? "Verifying..." : "VERIFY CODE"}</button>
           <div className="row mt8" style={{ justifyContent: "space-between" }}>
@@ -161,7 +168,7 @@ export default function Login({ onLogin, onBlocked }) {
           )}
           {forgotStep === 2 && (
             <>
-              <Field label="6-digit code"><input className="input center mono" style={{ fontSize: 18, letterSpacing: 4 }} inputMode="numeric" maxLength={6} value={form.otp} onChange={set("otp")} /></Field>
+              <Field label="6-digit code"><input className="input code-input" inputMode="numeric" maxLength={6} value={form.otp} onChange={set("otp")} /></Field>
               <button className="btn" style={{ width: "100%" }} disabled={busy} onClick={submitForgot}>{busy ? "Verifying..." : "VERIFY OTP"}</button>
             </>
           )}
@@ -176,6 +183,7 @@ export default function Login({ onLogin, onBlocked }) {
         </>
       )}
       <Msg kind={msg?.kind}>{msg?.text}</Msg>
+      <div className="secure-foot"><span>TLS</span><span>bcrypt</span><span>JWT</span><span>2FA</span></div>
     </div>
     </div>
   );

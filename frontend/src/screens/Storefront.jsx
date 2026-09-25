@@ -8,10 +8,10 @@ export default function Storefront({ session, onBlocked }) {
   const [tab, setTab] = useState("home");
   return (
     <div>
-      <div className="topbar" style={{ background: "#fff", color: "var(--navy)", borderBottom: "1px solid var(--border)" }}>
-        <div className="brand" style={{ color: "var(--navy)" }}><ShieldIcon /> Aegis</div>
-        <button className={`tab ${tab === "home" ? "active" : ""}`} style={{ color: "var(--muted)" }} onClick={() => setTab("home")}>Home</button>
-        <button className={`tab ${tab === "products" ? "active" : ""}`} style={{ color: "var(--muted)" }} onClick={() => setTab("products")}>Products &amp; Reviews</button>
+      <div className="topbar subbar">
+        <div className="brand"><ShieldIcon /> Storefront</div>
+        <button className={`tab ${tab === "home" ? "active" : ""}`} onClick={() => setTab("home")}>Home</button>
+        <button className={`tab ${tab === "products" ? "active" : ""}`} onClick={() => setTab("products")}>Products &amp; Reviews</button>
         <div className="spacer" />
         <span className="small muted">Hi, <b>{session.name}</b></span>
       </div>
@@ -84,7 +84,7 @@ function Reviews({ user, onBlocked }) {
         <b className="small">Recent Comments</b>
         {comments.map((c) =>
           c.flagged ? (
-            <div key={c.id} className="mt8" style={{ background: "#fdf2f2", border: "1px solid var(--red)", borderRadius: 8, padding: 10 }}>
+            <div key={c.id} className="mt8 flagged">
               <div className="row" style={{ justifyContent: "space-between" }}>
                 <b className="small">{c.name}</b>
                 <Badge text="XSS" kind="blocked" />

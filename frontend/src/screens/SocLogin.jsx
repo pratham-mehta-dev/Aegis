@@ -17,16 +17,23 @@ export default function SocLogin({ onLogin }) {
         const res = await api.login({ email: form.email, password: form.password });
         setPending(res);
       } else {
-        const res = await api.verify2fa({ pendingToken: pending.pendingToken, code: form.code });
+        if (form.code.trim().length !== 6) {
+          setMsg({ kind: "error", text: "Enter the 6-digit code." });
+          return;
+        }
+        const res = await api.verify2fa({ pendingToken: pending.pendingToken, code: form.code.trim() });
         if (res.user.role !== "admin") {
-          return setMsg({ kind: "error", text: "This account is not authorized for the SOC Console." });
+          setMsg({ kind: "error", text: "This account is not authorized for the SOC Console." });
+          return;
         }
         onLogin(res);
       }
     } catch (err) {
       setMsg({ kind: "error", text: err.message });
+      if (err?.data?.code === "session_expired") setPending(null);
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   };
 
   return (

@@ -26,7 +26,7 @@ export default function App() {
   const onLogin = ({ accessToken, user }) => {
     setAccessToken(accessToken);
     setSession(user);
-    setView(user.role === "admin" && view === "soc-login" ? "soc" : "storefront");
+    setView(user.role === "admin" ? "soc" : "storefront");
   };
 
   const onLogout = async () => {

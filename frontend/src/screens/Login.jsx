@@ -36,8 +36,6 @@ export default function Login({ onLogin, onBlocked }) {
     }
     // IDS inspects the email field only — never the password.
     const verdict = await inspectPayload(form.email);
-    // A blocked source must still be able to authenticate so an admin can lift the block;
-    // post-login actions keep hitting the blocklist via /api/ids/predict.
     if (verdict.malicious && verdict.type !== "Blocked Source") return onBlocked(verdict);
     const res = await api.login({ email: form.email, password: form.password });
     setPending(res);

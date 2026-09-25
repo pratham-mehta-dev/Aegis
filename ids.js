@@ -6,6 +6,8 @@ const { v4: uuidv4 } = require("uuid");
 const db = require("./db");
 const { idsLimiter } = require("./middleware/rateLimiter");
 const { asyncHandler } = require("./middleware/asyncHandler");
+const { requireAuth } = require("./middleware/auth");
+const { requireRole } = require("./middleware/requireRole");
 
 const router = express.Router();
 
@@ -103,7 +105,7 @@ const SIMULATED_TYPES = {
   "Brute Force": { severity: "High", detail: "hydra ssh", layer: "Network" },
 };
 
-router.post("/simulate", idsLimiter, (req, res) => {
+router.post("/simulate", idsLimiter, requireAuth, requireRole("admin"), (req, res) => {
   const type = String(req.body?.type || "");
   const preset = SIMULATED_TYPES[type];
   if (!preset) return res.status(400).json({ error: "Unknown simulated attack type." });

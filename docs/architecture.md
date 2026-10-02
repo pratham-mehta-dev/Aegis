@@ -9,7 +9,7 @@ flowchart LR
   subgraph Client["Browser"]
     FE["React prototype<br/>SOC Console · Demo Storefront · Attack Simulator"]
   end
-  subgraph API["Node.js API :4000 (Express 4)"]
+  subgraph API["Node.js API :4001 (Express 4)"]
     SRV["server.js<br/>CORS · JSON · /health · IDS proxy"]
     AUTH["auth.js<br/>/api/auth/*"]
     MW["middleware/<br/>requireAuth · rateLimiter"]
@@ -25,7 +25,7 @@ flowchart LR
   SRV -- "POST /predict" --> ML
 ```
 
-Three processes in dev: Node API (4000), Flask ML (5000, loopback only), and the browser. The browser never calls Flask directly.
+Development uses the Vite frontend on :4000, Node API on :4001, and Flask ML on :5000 (loopback only). The browser never calls Flask directly.
 
 ## 2. Real vs simulated
 

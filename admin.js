@@ -158,10 +158,14 @@ router.get("/stats", (req, res) => {
        FROM alerts ORDER BY created_at DESC LIMIT 30`
     )
     .all();
-  const model = db
-    .prepare("SELECT model FROM alerts WHERE model IS NOT NULL ORDER BY created_at DESC LIMIT 1")
-    .get();
-  res.json({ total24h: total, critical24h: critical, blockedSources: blocked, byType, feed, model: model?.model || null });
+  res.json({
+    total24h: total,
+    critical24h: critical,
+    blockedSources: blocked,
+    byType,
+    feed,
+    model: "Hybrid ML + Suricata",
+  });
 });
 
 // ---------- audit viewer ----------
@@ -171,6 +175,20 @@ router.get("/audit", (req, res) => {
     .prepare("SELECT * FROM audit_log ORDER BY created_at DESC LIMIT 200")
     .all();
   res.json({ audit: rows });
+});
+
+// ---------- users list ----------
+
+router.get("/users", (req, res) => {
+  const rows = db
+    .prepare(
+      `SELECT id, email, name, role, email_verified, two_fa_method,
+              lockout_until, failed_login_attempts, account_disabled, created_at,
+              (SELECT COUNT(*) FROM audit_log a WHERE a.user_id = users.id OR a.email = users.email) AS audit_count
+       FROM users ORDER BY created_at DESC`
+    )
+    .all();
+  res.json({ users: rows });
 });
 
 module.exports = router;

@@ -18,7 +18,7 @@
 | Frontend | **Two diverging builds** (I-09). (a) `files/idps_frontend_prototype.jsx` (26 Aug): ML/IDS checks, SOC Console (mock data), Attack Simulator, 403 screen, real login/register/2FA. (b) `files/idps_prototype.html` (27 Aug, **newest file in the project**): older compiled React prototype + hand-written JS overlay adding real register, login+OTP, full 3-step password reset, logout, user and admin home pages, but **no ML/IDS calls** | UI prototype; SOC data is **mock**; neither build has every feature |
 
 **Simulated (not real):** network-layer detection, alerts list, blocklist, KPI/model-accuracy cards, admin authorization (browser-only check).
-**Dev environment:** Windows, PowerShell, local only. Ports: API 4000, ML 5000 (loopback).
+**Dev environment:** Windows, PowerShell, local only. Ports: Unified server on 4001 (serves frontend SPA + API), ML 5000 (loopback).
 
 ## 2. Current focus and next actions
 
@@ -109,15 +109,15 @@
 npm install
 copy .env.example .env                       # then fill values
 npm run create-admin -- "Name" you@gmail.com StrongPass1!
-npm run dev                                  # API :4000 (auto-restart)
-npm start                                    # API without watch
+npm run dev                                  # API :4001 (auto-restart)
+npm start                                    # API :4001 without watch
 
 python -m venv .venv ; .venv\Scripts\activate
 pip install -r ml_service/requirements.txt
 npm run ml                                   # ML :5000
 
-curl http://localhost:4000/health
-curl -X POST http://localhost:4000/api/ids/predict -H "Content-Type: application/json" -d "{\"payload\":\"' OR '1'='1' --\"}"
+curl http://localhost:4001/health
+curl -X POST http://localhost:4001/api/ids/predict -H "Content-Type: application/json" -d "{\"payload\":\"' OR '1'='1' --\"}"
 ```
 
 Demo inputs for detection: `' OR '1'='1' --`, `union select username password from users`, `<script>alert(1)</script>`, `<img src=x onerror=alert(1)>`.

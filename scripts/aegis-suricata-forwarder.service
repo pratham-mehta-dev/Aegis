@@ -1,0 +1,24 @@
+[Unit]
+Description=Aegis Suricata EVE alert forwarder
+After=network-online.target suricata.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=aegis-forwarder
+Group=aegis-forwarder
+EnvironmentFile=/etc/aegis/suricata-forwarder.env
+Environment=SURICATA_EVE_PATH=/var/log/suricata/eve.json
+Environment=SURICATA_FORWARDER_STATE=/var/lib/aegis-suricata-forwarder/cursor.json
+ExecStart=/usr/bin/python3 /usr/local/libexec/aegis-suricata-forwarder.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+StateDirectory=aegis-suricata-forwarder
+ReadOnlyPaths=/var/log/suricata/eve.json
+
+[Install]
+WantedBy=multi-user.target

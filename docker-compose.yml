@@ -1,0 +1,17 @@
+services:
+  aegis:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aegis-idps
+    restart: unless-stopped
+    ports:
+      - "4001:4001"
+    env_file:
+      - .env
+    volumes:
+      - aegis-data:/app/data
+
+volumes:
+  aegis-data:
+    name: aegis_sqlite_data

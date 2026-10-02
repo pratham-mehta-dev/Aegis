@@ -4,7 +4,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const envFile = path.join(__dirname, ".env");
-if (fs.existsSync(envFile)) {
+if (process.env.NODE_ENV !== "test" && fs.existsSync(envFile)) {
   for (const line of fs.readFileSync(envFile, "utf8").split(/\r?\n/)) {
     const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
     if (!m || m[1].startsWith("#")) continue;
@@ -111,7 +111,7 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: "Internal server error." });
 });
 
-const port = Number(process.env.PORT || 4000);
+const port = Number(process.env.PORT || 4001);
 if (require.main === module) {
   app.listen(port, () => {
     console.log(`[aegis] API listening on http://localhost:${port}`);

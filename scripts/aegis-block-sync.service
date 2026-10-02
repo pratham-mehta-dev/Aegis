@@ -1,0 +1,23 @@
+[Unit]
+Description=Aegis lab firewall blocklist synchronizer
+After=network-online.target nftables.service
+Wants=network-online.target
+Requires=nftables.service
+
+[Service]
+Type=simple
+User=aegis-forwarder
+Group=aegis-forwarder
+EnvironmentFile=/etc/aegis/suricata-forwarder.env
+ExecStart=/usr/bin/python3 /usr/local/libexec/aegis-block-sync.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+AmbientCapabilities=CAP_NET_ADMIN
+CapabilityBoundingSet=CAP_NET_ADMIN
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

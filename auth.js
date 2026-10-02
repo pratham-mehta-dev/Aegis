@@ -3,7 +3,9 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { timingSafeEqual } = require("node:crypto");
 const { v4: uuidv4 } = require("uuid");
+const { OAuth2Client } = require("google-auth-library");
 
 const db = require("./db");
 const mailer = require("./mailer");
@@ -31,6 +33,8 @@ const MAX_LOGIN_FAILS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
 const MAX_OTP_ATTEMPTS = 5;
 const BCRYPT_ROUNDS = 12;
+const GOOGLE_STATE_COOKIE = "googleOAuthState";
+const GOOGLE_PENDING_COOKIE = "googlePending2FA";
 
 // ---------- helpers ----------
 
@@ -144,6 +148,32 @@ const htmlPage = (title, body, ok) => `<!doctype html><html><head><meta charset=
 <p style="color:#b7c4d8">${body}</p>
 <p><a style="color:#7da6e8" href="${escapeHtml(process.env.FRONTEND_URL)}">Return to sign in</a></p>
 </div></body></html>`;
+
+const googleOAuthEnabled = () => Boolean(
+  process.env.GOOGLE_CLIENT_ID &&
+  process.env.GOOGLE_CLIENT_SECRET &&
+  process.env.GOOGLE_REDIRECT_URI
+);
+
+const googleOAuthClient = () => new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI
+);
+
+const googleCookieOptions = (cookiePath, maxAge) => ({
+  httpOnly: true,
+  sameSite: "lax",
+  secure: process.env.NODE_ENV === "production",
+  path: cookiePath,
+  maxAge,
+});
+
+const googleFrontendUrl = (result) => {
+  const url = new URL(process.env.FRONTEND_URL);
+  url.searchParams.set("google", result);
+  return url.toString();
+};
 
 // ---------- registration ----------
 
@@ -304,6 +334,148 @@ router.post(
     return res.json({ requires2FA: true, method: "email", pendingToken });
   })
 );
+
+router.get("/google/status", (req, res) => {
+  return res.json({ enabled: googleOAuthEnabled() });
+});
+
+router.get("/google", loginLimiter, (req, res) => {
+  if (!googleOAuthEnabled()) {
+    return res.status(503).json({ error: "Google sign-in is not configured." });
+  }
+  const state = randomToken(32);
+  res.cookie(
+    GOOGLE_STATE_COOKIE,
+    state,
+    googleCookieOptions("/api/auth/google/callback", 10 * 60 * 1000)
+  );
+  return res.redirect(googleOAuthClient().generateAuthUrl({
+    access_type: "online",
+    prompt: "select_account",
+    scope: ["openid", "email", "profile"],
+    state,
+  }));
+});
+
+router.get(
+  "/google/callback",
+  asyncHandler(async (req, res) => {
+    const state = typeof req.query.state === "string" ? req.query.state : "";
+    const stateCookie = req.cookies?.[GOOGLE_STATE_COOKIE] || "";
+    res.clearCookie(GOOGLE_STATE_COOKIE, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/api/auth/google/callback",
+    });
+
+    const providedState = Buffer.from(state);
+    const expectedState = Buffer.from(stateCookie);
+    if (!state || providedState.length !== expectedState.length || !expectedState.length ||
+        !timingSafeEqual(providedState, expectedState)) {
+      return res.redirect(googleFrontendUrl("state"));
+    }
+    if (req.query.error) return res.redirect(googleFrontendUrl("cancelled"));
+    if (!googleOAuthEnabled() || typeof req.query.code !== "string") {
+      return res.redirect(googleFrontendUrl("failed"));
+    }
+
+    try {
+      const oauth = googleOAuthClient();
+      const { tokens } = await oauth.getToken({ code: req.query.code });
+      if (!tokens.id_token) throw new Error("Google did not return an ID token.");
+      const ticket = await oauth.verifyIdToken({
+        idToken: tokens.id_token,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const profile = ticket.getPayload();
+      const email = String(profile?.email || "").trim().toLowerCase();
+      if (profile?.email_verified !== true || !/^[^\s@]+@gmail\.com$/.test(email)) {
+        audit(req, { email, event: "google_login_rejected" });
+        return res.redirect(googleFrontendUrl("email"));
+      }
+
+      let user = findUserByEmail(email);
+      if (!user) {
+        const id = uuidv4();
+        const now = Date.now();
+        const name = String(profile.name || email.split("@")[0]).trim().slice(0, 120) || email;
+        const passwordHash = await bcrypt.hash(randomToken(48), BCRYPT_ROUNDS);
+        try {
+          db.prepare(
+            `INSERT INTO users (id, name, email, password_hash, role, email_verified,
+              two_fa_enabled, two_fa_method, created_at, updated_at)
+             VALUES (?,?,?,?,'user',1,1,'email',?,?)`
+          ).run(id, name, email, passwordHash, now, now);
+          user = findUserByEmail(email);
+          audit(req, { userId: id, email, event: "google_register" });
+        } catch (err) {
+          user = findUserByEmail(email);
+          if (!user) throw err;
+        }
+      }
+
+      if (user.account_disabled) {
+        audit(req, { userId: user.id, email, event: "google_login_blocked_disabled" });
+        return res.redirect(googleFrontendUrl("disabled"));
+      }
+      if (user.lockout_until && user.lockout_until > Date.now()) {
+        audit(req, { userId: user.id, email, event: "google_login_blocked_lockout" });
+        return res.redirect(googleFrontendUrl("locked"));
+      }
+
+      const now = Date.now();
+      db.prepare(
+        `UPDATE users SET email_verified = 1, email_verify_token = NULL,
+          email_verify_expires = NULL, failed_login_attempts = 0,
+          lockout_until = NULL, updated_at = ? WHERE id = ?`
+      ).run(now, user.id);
+      user = db.prepare("SELECT * FROM users WHERE id = ?").get(user.id);
+
+      const pendingToken = signPendingToken(user);
+      if (user.two_fa_method !== "totp") {
+        const code = insertOtp(user.id, "login_2fa", OTP_LOGIN_TTL_MS);
+        try {
+          await mailer.sendOtpEmail(user, code, "login_2fa");
+        } catch (err) {
+          console.error("[auth] Google login OTP email failed:", err.message);
+          return res.redirect(googleFrontendUrl("challenge"));
+        }
+      }
+
+      res.cookie(
+        GOOGLE_PENDING_COOKIE,
+        pendingToken,
+        googleCookieOptions("/api/auth/google/pending", 10 * 60 * 1000)
+      );
+      audit(req, { userId: user.id, email, event: "google_login_2fa_challenge" });
+      return res.redirect(googleFrontendUrl("success"));
+    } catch (err) {
+      console.error("[auth] Google sign-in failed:", err.message);
+      return res.redirect(googleFrontendUrl("failed"));
+    }
+  })
+);
+
+router.get("/google/pending", (req, res) => {
+  const pendingToken = req.cookies?.[GOOGLE_PENDING_COOKIE];
+  res.clearCookie(GOOGLE_PENDING_COOKIE, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/api/auth/google/pending",
+  });
+  if (!pendingToken) return res.status(401).json({ error: "No Google sign-in is pending." });
+
+  try {
+    const payload = verifyPendingToken(pendingToken);
+    const user = db.prepare("SELECT * FROM users WHERE id = ?").get(payload.sub);
+    if (!user || user.account_disabled) throw new Error("Account unavailable.");
+    return res.json({ requires2FA: true, method: user.two_fa_method, pendingToken });
+  } catch {
+    return res.status(401).json({ error: "Google sign-in session expired. Start again." });
+  }
+});
 
 router.post(
   "/2fa/verify",

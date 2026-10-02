@@ -43,6 +43,8 @@ export async function tryRefresh() {
 }
 
 export const api = {
+  googleStatus: () => request("/api/auth/google/status", { auth: false }),
+  googlePending: () => request("/api/auth/google/pending", { auth: false }),
   register: (b) => request("/api/auth/register", { method: "POST", body: b, auth: false }),
   login: (b) => request("/api/auth/login", { method: "POST", body: b, auth: false }),
   verify2fa: (b) => request("/api/auth/2fa/verify", { method: "POST", body: b, auth: false }),
@@ -68,5 +70,7 @@ export const api = {
   adminBlock: (b) => request("/api/admin/blocklist", { method: "POST", body: b }),
   adminUnblock: (ip) => request(`/api/admin/blocklist/${encodeURIComponent(ip)}`, { method: "DELETE" }),
   adminStats: () => request("/api/admin/stats"),
+  adminUsers: () => request("/api/admin/users"),
+  adminAudit: () => request("/api/admin/audit"),
   modelInfo: () => request("/api/model/info"),
 };

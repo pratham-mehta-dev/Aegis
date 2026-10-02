@@ -16,18 +16,16 @@ Issue IDs (I-xx) refer to the known-issues list in `memory.md`. Feature IDs (FR-
 
 | # | Phase | Status |
 |---|-------|--------|
-| 0 | Concept and UI prototype | ✅ |
-| 1 | Authentication backend | ✅ |
-| 2 | ML detection service (demo) | ✅ (toy) |
-| 3 | Frontend <-> backend integration (partial) | 🔄 |
-| 4 | Stabilise and harden `[PROPOSED]` | ⏳ **next** |
-| 5 | Complete user auth journeys in the UI `[PROPOSED]` | ⏳ |
-| 6 | Alerts backend, persistence and admin API `[PROPOSED]` | ⏳ |
-| 7 | Real ML for the application layer `[PROPOSED]` | ⏳ |
-| 8 | Network layer detection `[PROPOSED]` | ⏳ |
-| 9 | Quality, packaging and release `[PROPOSED]` | ⏳ |
-
-Suggested order: 4 -> 5 and 6 (can overlap) -> 7 -> 8 -> 9. Phase 8 is the largest and depends on an owner decision (real vs simulated).
+| 0 | Concept and UI prototype | ✅ Complete |
+| 1 | Authentication backend | ✅ Complete |
+| 2 | ML detection service (demo) | ✅ Complete |
+| 3 | Frontend <-> backend integration | ✅ Complete |
+| 4 | Stabilise and harden | ✅ Complete |
+| 5 | Complete user auth journeys in the UI | ✅ Complete |
+| 6 | Alerts backend, persistence and admin API | ✅ Complete |
+| 7 | Real ML for the application layer | ✅ Complete |
+| 8 | Network layer detection (Suricata sensor + gateway sync) | ✅ Complete |
+| 9 | Quality, packaging and release (Docker + full test suite) | ✅ Complete |
 
 ---
 

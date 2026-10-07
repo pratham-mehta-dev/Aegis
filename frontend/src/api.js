@@ -1,5 +1,5 @@
 // All backend calls go through here. Access token lives in memory only;
-// the refresh cookie is httpOnly and sent automatically (same origin / CORS credentials).
+// the refresh cookie is httpOnlby and sent automatically (same origin / CORS credentials).
 
 let accessToken = null;
 let onSessionExpired = null;

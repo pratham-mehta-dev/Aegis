@@ -50,36 +50,55 @@ router.get("/alerts", (req, res) => {
   res.json({ alerts: rows, total, page, limit });
 });
 
+// --- Replace the CSV export handler and helper in admin.js ---
+
+const escCsv = (v) => {
+  let str = String(v ?? "").trim();
+
+  // Neutralize CSV/DDE formula execution characters
+  if (/^[=+@\-%|\t\r]/.test(str)) {
+    str = "\t" + str;
+  }
+
+  // Standard RFC 4180 double-quote escaping
+  return `"${str.replace(/"/g, '""')}"`;
+};
+
 router.get("/alerts/export.csv", (req, res) => {
-  const rows = db
-    .prepare(
-      `SELECT id, created_at, layer, type, severity, confidence, source_ip, endpoint, status
-       FROM alerts ORDER BY created_at DESC LIMIT 10000`
-    )
-    .all();
-  const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", 'attachment; filename="aegis-alerts.csv"');
+  res.setHeader("X-Content-Type-Options", "nosniff");
+
   const header = "id,created_at,layer,type,severity,confidence,source_ip,endpoint,status\n";
-  const body = rows
-    .map((r) =>
-      [
-        r.id,
-        new Date(r.created_at).toISOString(),
-        r.layer,
-        r.type,
-        r.severity,
-        r.confidence,
-        r.source_ip,
-        r.endpoint,
-        r.status,
-      ]
-        .map(esc)
-        .join(",")
-    )
-    .join("\n");
-  res.setHeader("Content-Type", "text/csv");
-  res.setHeader("Content-Disposition", "attachment; filename=aegis-alerts.csv");
-  res.send(header + body + "\n");
+  res.write(header);
+
+  // Stream via SQLite cursor iterator to prevent memory spikes
+  const stmt = db.prepare(
+    `SELECT id, created_at, layer, type, severity, confidence, source_ip, endpoint, status
+     FROM alerts ORDER BY created_at DESC LIMIT 10000`
+  );
+
+  for (const r of stmt.iterate()) {
+    const line = [
+      r.id,
+      new Date(r.created_at).toISOString(),
+      r.layer,
+      r.type,
+      r.severity,
+      r.confidence,
+      r.source_ip,
+      r.endpoint,
+      r.status,
+    ]
+      .map(escCsv)
+      .join(",");
+
+    res.write(line + "\n");
+  }
+
+  res.end();
 });
+
 
 router.get("/alerts/:id", (req, res) => {
   const alert = db.prepare("SELECT * FROM alerts WHERE id = ?").get(req.params.id);

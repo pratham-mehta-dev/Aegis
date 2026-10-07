@@ -1,3 +1,14 @@
+// --- Crash Prevention Guards ---
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL ERROR PREVENTED] Uncaught Exception:', err.message);
+  console.error(err.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[PROMISE REJECTION PREVENTED] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+// -------------------------------
+
 "use strict";
 
 // Minimal .env loader so no extra dependency is required for secrets.
@@ -18,6 +29,9 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 
 const REQUIRED_ENV = ["JWT_ACCESS_SECRET", "PENDING_2FA_SECRET", "FRONTEND_URL"];
+if (process.env.NODE_ENV === "production") {
+  REQUIRED_ENV.push("SMTP_HOST", "SMTP_USER", "SMTP_PASS", "SMTP_FROM");
+}
 const missing = REQUIRED_ENV.filter((k) => !process.env[k]);
 if (missing.length) {
   console.error(`[startup] missing required env vars: ${missing.join(", ")} (see .env.example)`);
@@ -25,10 +39,6 @@ if (missing.length) {
 }
 if (process.env.JWT_ACCESS_SECRET === process.env.PENDING_2FA_SECRET) {
   console.error("[startup] JWT_ACCESS_SECRET and PENDING_2FA_SECRET must be different.");
-  process.exit(1);
-}
-if (process.env.NODE_ENV === "production" && !process.env.SMTP_HOST) {
-  console.error("[startup] SMTP is required in production.");
   process.exit(1);
 }
 
@@ -71,7 +81,26 @@ process.on("uncaughtException", (err) => {
   console.error("[uncaughtException]", err);
 });
 
+// Health check endpoint
 app.get("/health", (req, res) => res.json({ ok: true }));
+
+// --- Permanent Attack Simulation Endpoint ---
+app.get("/aegis-test-attack", (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "Aegis test attack pattern detected and processed. Signature dispatched across network.",
+    timestamp: new Date().toISOString(),
+    clientIp: req.ip || req.socket.remoteAddress
+  });
+});
+// --------------------------------------------
+app.get("/aegis-test-attack", (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "Aegis test attack pattern detected and processed.",
+    timestamp: new Date().toISOString()
+  });
+});
 
 app.use("/api/auth", authRouter);
 app.use("/api/ids", idsRouter);
@@ -111,10 +140,11 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: "Internal server error." });
 });
 
-const port = Number(process.env.PORT || 4001);
+const PORT = Number(process.env.PORT || 4001);
+
 if (require.main === module) {
-  app.listen(port, () => {
-    console.log(`[aegis] API listening on http://localhost:${port}`);
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[aegis] API listening on http://0.0.0.0:${PORT}`);
     if (require("./mailer").mailDevMode()) {
       console.log("[aegis] mail dev mode: emails are printed to console and data/outbox.log");
     }

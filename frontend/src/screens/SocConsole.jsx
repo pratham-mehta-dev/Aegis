@@ -224,7 +224,7 @@ function Blocked({ say }) {
   const [showForm, setShowForm] = useState(false);
 
   const load = () => api.adminBlocklist().then((r) => setRows(r.blocked)).catch(() => {});
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
 
   const block = async () => {
     try {
@@ -330,8 +330,8 @@ function UsersView({ say }) {
 
   const loadUsers = () => {
     api.adminUsers()
-      .then((data) => setUsers(data.users || []))
-      .catch((err) => say(err.message || "Failed to load users"));
+      .then((data) => setUsers(Array.isArray(data) ? data : (data?.users || [])))
+      .catch((err) => say(err?.message || "Failed to load users"));
   };
 
   useEffect(() => {
@@ -343,8 +343,11 @@ function UsersView({ say }) {
     setLoadingAudit(true);
     api.adminAudit()
       .then((data) => {
-        const filtered = (data.audit || []).filter(
-          (a) => a.email?.toLowerCase() === u.email?.toLowerCase() || a.user_id === u.id
+        const rows = Array.isArray(data) ? data : (data?.audit || []);
+        const filtered = rows.filter(
+          (a) =>
+            a.email?.toLowerCase() === u.email?.toLowerCase() ||
+            a.user_id === u.id
         );
         setAuditRows(filtered);
       })
@@ -352,23 +355,26 @@ function UsersView({ say }) {
       .finally(() => setLoadingAudit(false));
   };
 
-  const filteredUsers = users.filter((u) => {
-    const q = search.toLowerCase().trim();
+  const safeUsers = Array.isArray(users) ? users : [];
+
+  const filteredUsers = safeUsers.filter((u) => {
+    if (!u) return false;
+    const q = (search || "").toLowerCase().trim();
     if (!q) return true;
     return (
-      u.email?.toLowerCase().includes(q) ||
-      u.name?.toLowerCase().includes(q) ||
-      u.role?.toLowerCase().includes(q)
+      (u.email || "").toLowerCase().includes(q) ||
+      (u.name || "").toLowerCase().includes(q) ||
+      (u.role || "").toLowerCase().includes(q)
     );
   });
 
-  const adminCount = users.filter((u) => u.role === "admin").length;
-  const verifiedCount = users.filter((u) => u.email_verified).length;
+  const adminCount = safeUsers.filter((u) => u && u.role === "admin").length;
+  const verifiedCount = safeUsers.filter((u) => u && u.email_verified).length;
 
   return (
     <div>
       <div className="grid grid-3">
-        <Kpi label="Total Registered Users" value={users.length} color="var(--accent)" />
+        <Kpi label="Total Registered Users" value={safeUsers.length} color="var(--accent)" />
         <Kpi label="Admin Accounts" value={adminCount} color="var(--purple)" />
         <Kpi label="Verified Accounts" value={verifiedCount} color="var(--green)" />
       </div>
@@ -425,7 +431,7 @@ function UsersView({ say }) {
                           border: `1px solid ${u.role === "admin" ? "var(--accent)" : "transparent"}`,
                         }}
                       >
-                        {u.role.toUpperCase()}
+                        {String(u.role || "").toUpperCase()}
                       </span>
                     </td>
                     <td className="small muted">
@@ -467,10 +473,13 @@ function UsersView({ say }) {
       </div>
 
       {selectedUser && (
-        <Modal title={`Security Audit Trail — ${selectedUser.email}`} onClose={() => setSelectedUser(null)}>
-          <div className="small muted mb8">
-            Showing security events and authentication actions logged for <b>{selectedUser.email}</b>.
+        <Modal onClose={() => setSelectedUser(null)}>
+          <div className="row">
+            <h3 className="grow">Security Audit Trail — {selectedUser.email}</h3>
           </div>
+          <p className="small muted mb8 mt8">
+            Showing security events and authentication actions logged for <b>{selectedUser.email}</b>.
+          </p>
           {loadingAudit ? (
             <p className="muted small">Loading user audit history...</p>
           ) : !auditRows.length ? (

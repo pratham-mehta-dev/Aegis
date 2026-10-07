@@ -86,10 +86,6 @@ const maybeAutoBlockLabClient = (sourceIp, severity, signature) => {
       db.prepare(`
         INSERT INTO blocked_ips (id, ip, reason, layer, blocked_by, active, created_at)
         VALUES (?, ?, ?, 'Network', 'auto-ids', 1, ?)
-        ON CONFLICT(ip) DO UPDATE SET
-          active = 1,
-          reason = excluded.reason,
-          created_at = excluded.created_at
       `).run(blockId, sourceIp, `Auto-blocked: ${signature} (${alertCount} alerts)`, now);
       console.log(`[IDS] IP ${sourceIp} auto-quarantined (id: ${blockId}) after ${alertCount} alerts.`);
       return true;
